@@ -1,1 +1,68 @@
-const canvas=document.getElementById('game-canvas'),ctx=canvas.getContext('2d');let state={title:true,x:1800,y:1200,score:0};const keys={};onkeydown=e=>{keys[e.key]=true;if(e.key==='Enter')state.title=false};onkeyup=e=>keys[e.key]=false;function resize(){canvas.width=innerWidth;canvas.height=innerHeight}onresize=resize;resize();function loop(){if(!state.title){if(keys.w||keys.ArrowUp)state.y-=3;if(keys.s||keys.ArrowDown)state.y+=3;if(keys.a||keys.ArrowLeft)state.x-=3;if(keys.d||keys.ArrowRight)state.x+=3;}ctx.fillStyle='#080812';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#202033';for(let x=-state.x%400;x<canvas.width;x+=400)ctx.fillRect(x,0,180,canvas.height);for(let y=-state.y%360;y<canvas.height;y+=360)ctx.fillRect(0,y,canvas.width,180);ctx.fillStyle='#17172b';for(let x=-state.x%400+210;x<canvas.width;x+=400)for(let y=-state.y%360+200;y<canvas.height;y+=360)ctx.fillRect(x,y,280,250);ctx.fillStyle='#00ffaa';ctx.shadowBlur=18;ctx.shadowColor='#00ffaa';ctx.beginPath();ctx.arc(canvas.width/2,canvas.height/2,16,0,7);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#d8ffe8';ctx.font='16px monospace';ctx.fillText('NEON DISTRICT  |  WASD move  |  ENTER start',24,30);if(state.title){ctx.fillStyle='rgba(8,8,18,.9)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#00ffaa';ctx.font='bold 56px monospace';ctx.fillText('NEON DISTRICT',canvas.width/2-260,canvas.height/2-20);ctx.font='20px monospace';ctx.fillText('PRESS ENTER TO START',canvas.width/2-130,canvas.height/2+40)}requestAnimationFrame(loop)}loop();
+import { createGameState, updateGameState, drawGame, loadGameState, saveGameState } from './gameLogic.js';
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.key] = true; if (e.key === 'Escape') togglePause(); });
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+const mouse = { x: 0, y: 0, down: false };
+canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+canvas.addEventListener('mousedown', () => mouse.down = true);
+canvas.addEventListener('mouseup', () => mouse.down = false);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+let state = createGameState();
+let lastTime = 0;
+let paused = false;
+
+function gameLoop(time) {
+  const dt = Math.min((time - lastTime) / 1000, 1/30);
+  lastTime = time;
+  
+  if (!paused && !state.titleScreen.active && !state.gameOver.active) {
+    updateGameState(state, dt, keys, mouse);
+  }
+  drawGame(ctx, state);
+  requestAnimationFrame(gameLoop);
+}
+
+function togglePause() {
+  if (state.titleScreen.active || state.gameOver.active) return;
+  paused = !paused;
+  document.getElementById('pause-menu').classList.toggle('active', paused);
+}
+
+document.getElementById('btn-new-game').onclick = () => {
+  state = createGameState();
+  state.titleScreen.active = false;
+  paused = false;
+};
+
+document.getElementById('btn-resume').onclick = togglePause;
+
+document.getElementById('btn-quit').onclick = () => {
+  paused = false;
+  state = createGameState();
+};
+
+document.getElementById('btn-retry').onclick = () => {
+  state = createGameState();
+  state.titleScreen.active = false;
+  state.gameOver.active = false;
+};
+
+document.getElementById('btn-title').onclick = () => {
+  state = createGameState();
+};
+
+requestAnimationFrame(gameLoop);
