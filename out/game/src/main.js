@@ -45,6 +45,7 @@ function togglePause() {
 document.getElementById('btn-new-game').onclick = () => {
   state = createGameState();
   state.titleScreen.active = false;
+  document.getElementById('title-screen').style.display = 'none';
   paused = false;
 };
 
